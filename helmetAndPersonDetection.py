@@ -54,3 +54,28 @@ def predict(image_path):
 
     print(colours0)
     print(colours1)
+
+    # In[8]:
+
+    bounding_boxes_for_person = []
+    confidences_for_person = []
+    class_numbers_for_person = []
+
+    h, w = image_input.shape[:2]
+
+    for result in output_from_network0:
+        for detection in result:
+            scores = detection[5:]
+            class_current = np.argmax(scores)
+            confidence_current = scores[class_current]
+            if confidence_current > probability_minimum:
+                box_current = detection[0:4] * np.array([w, h, w, h])
+                x_center, y_center, box_width, box_height = box_current.astype('int')
+                x_min = int(x_center - (box_width / 2))
+                y_min = int(y_center - (box_height / 2))
+
+                bounding_boxes_for_person.append([x_min, y_min, int(box_width), int(box_height)])
+                confidences_for_person.append(float(confidence_current))
+                class_numbers_for_person.append(class_current)
+
+    print(bounding_boxes_for_person)
