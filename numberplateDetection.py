@@ -76,3 +76,65 @@ def predict1(image_path):
     plt.savefig('Car-Contours.png',bbox_inches = 'tight')
     # plt.show()
 
+    # In[5]
+    # Data Preparation
+    temp_result = np.zeros((height, width, channel), dtype=np.uint8)
+
+    contours_dict = []
+
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(temp_result, pt1=(x, y), pt2=(x+w, y+h), color=(255, 255, 255), thickness=2)
+        
+        # insert to dict
+        contours_dict.append({
+            'contour': contour,
+            'x': x,
+            'y': y,
+            'w': w,
+            'h': h,
+            'cx': x + (w / 2),
+            'cy': y + (h / 2)
+        })
+
+    plt.figure(figsize=(12, 10))
+    plt.imshow(temp_result, cmap='gray')
+    plt.axis('off')
+    plt.savefig('Car-Boxes.png',bbox_inches = 'tight')
+    # plt.show()
+
+    # %% [markdown]
+
+    # In[6]
+    # Selecting Boxes by Char Size
+    MIN_AREA = 80
+    MIN_WIDTH, MIN_HEIGHT = 2, 8
+    MIN_RATIO, MAX_RATIO = 0.25, 1.0
+
+    possible_contours = []
+
+    cnt = 0
+    for d in contours_dict:
+        area = d['w'] * d['h']
+        ratio = d['w'] / d['h']
+        
+        if area > MIN_AREA \
+        and d['w'] > MIN_WIDTH and d['h'] > MIN_HEIGHT \
+        and MIN_RATIO < ratio < MAX_RATIO:
+            d['idx'] = cnt
+            cnt += 1
+            possible_contours.append(d)
+            
+    # visualize possible contours
+    temp_result = np.zeros((height, width, channel), dtype=np.uint8)
+
+    for d in possible_contours:
+    #     cv2.drawContours(temp_result, d['contour'], -1, (255, 255, 255))
+        cv2.rectangle(temp_result, pt1=(d['x'], d['y']), pt2=(d['x']+d['w'], d['y']+d['h']), color=(255, 255, 255), thickness=2)
+
+    plt.figure(figsize=(12, 10))
+    plt.imshow(temp_result, cmap='gray')
+    plt.axis('off')
+    plt.savefig('Car-Boxes-byCharSize.png',bbox_inches = 'tight')
+    # plt.show()
+
