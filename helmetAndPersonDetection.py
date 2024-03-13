@@ -121,7 +121,12 @@ def predict(image_path):
           "\nProbability and threshhold value : ", probability_minimum, threshold)
     # print(results0.flattere())
     # Here "results0.flatten()" this functions is used to convert multidimentional array into 1D array.
-    
+    if (len(results0) == 0):
+        st.markdown(
+            f'<div style="font-size: 35px; font-weight: bold; color: black;">Output : No Person is detected. </div>',
+            unsafe_allow_html=True
+        )
+
     if len(results0) > 0:
         for i in results0.flatten():
             #         print(bounding_boxes_for_person[i][0],bounding_boxes_for_person[i][1])
@@ -138,6 +143,17 @@ def predict(image_path):
     results1 = cv2.dnn.NMSBoxes(bounding_boxes_for_helmet, confidences_for_helmet, probability_minimum, threshold)
     print(confidences_for_helmet)
     
+    if (len(results1) == 0):
+        st.markdown(
+            f'<div style="font-size: 35px; font-weight: bold; color: black;">Output : Person is not wearing a helmet</div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f'<div style="font-size: 35px; font-weight: bold; color: black;">Output : Person is wearing a helmet</div>',
+            unsafe_allow_html=True
+        )
+
     if len(results1) > 0:
         for i in results1.flatten():
             x_min, y_min = bounding_boxes_for_helmet[i][0], bounding_boxes_for_helmet[i][1]
