@@ -90,7 +90,7 @@ Welcome to the Helmet and Number Plate Detection system! Our project is designed
         )
         st.image(uploaded_image, caption='Uploaded Image', width = 400)
         image_data = uploaded_image.read()
-        output_directory = 'C:\\.vscode\\tempe\\Helmet-Detection-2024'
+        output_directory = 'C:\\.vscode\\Helmet and number plate detection\\Helmet-and-number-plate-detection'
         output_filename = "uploaded_image.jpg"
         output_path = output_directory + output_filename
 
