@@ -244,3 +244,109 @@ def predict1(image_path):
     plt.axis('off')
     plt.savefig('Car-OverlappingBoxes.png',bbox_inches = 'tight')
     # plt.show()
+
+    # In[9]
+    # Rotate Plate Images
+    PLATE_WIDTH_PADDING = 1.3 # 1.3
+    PLATE_HEIGHT_PADDING = 1.5 # 1.5
+    MIN_PLATE_RATIO = 3
+    MAX_PLATE_RATIO = 10
+
+    plate_imgs = []
+    plate_infos = []
+
+    for i, matched_chars in enumerate(matched_result):
+        sorted_chars = sorted(matched_chars, key=lambda x: x['cx'])
+
+        plate_cx = (sorted_chars[0]['cx'] + sorted_chars[-1]['cx']) / 2
+        plate_cy = (sorted_chars[0]['cy'] + sorted_chars[-1]['cy']) / 2
+        
+        plate_width = (sorted_chars[-1]['x'] + sorted_chars[-1]['w'] - sorted_chars[0]['x']) * PLATE_WIDTH_PADDING
+        
+        sum_height = 0
+        for d in sorted_chars:
+            sum_height += d['h']
+
+        plate_height = int(sum_height / len(sorted_chars) * PLATE_HEIGHT_PADDING)
+        
+        triangle_height = sorted_chars[-1]['cy'] - sorted_chars[0]['cy']
+        triangle_hypotenus = np.linalg.norm(
+            np.array([sorted_chars[0]['cx'], sorted_chars[0]['cy']]) - 
+            np.array([sorted_chars[-1]['cx'], sorted_chars[-1]['cy']])
+        )
+        
+        angle = np.degrees(np.arcsin(triangle_height / triangle_hypotenus))
+        
+        rotation_matrix = cv2.getRotationMatrix2D(center=(plate_cx, plate_cy), angle=angle, scale=1.0)
+        
+        img_rotated = cv2.warpAffine(img_thresh, M=rotation_matrix, dsize=(width, height))
+        
+        img_cropped = cv2.getRectSubPix(
+            img_rotated, 
+            patchSize=(int(plate_width), int(plate_height)), 
+            center=(int(plate_cx), int(plate_cy))
+        )
+        
+        if img_cropped.shape[1] / img_cropped.shape[0] < MIN_PLATE_RATIO or img_cropped.shape[1] / img_cropped.shape[0] < MIN_PLATE_RATIO > MAX_PLATE_RATIO:
+            continue
+        
+        plate_imgs.append(img_cropped)
+        plate_infos.append({
+            'x': int(plate_cx - plate_width / 2),
+            'y': int(plate_cy - plate_height / 2),
+            'w': int(plate_width),
+            'h': int(plate_height)
+        })
+        
+        plt.subplot(len(matched_result), 1, i+1)
+        plt.imshow(img_cropped, cmap='gray')
+        plt.axis('off')
+        plt.savefig('Car-Plates(Rotated).png',bbox_inches = 'tight')
+        # plt.show()
+
+    # In[10]
+    # Thresholding Again to Find Chars
+    # > Making the Chars more distinctive
+    longest_idx, longest_text = -1, 0
+    plate_chars = []
+
+    for i, plate_img in enumerate(plate_imgs):
+        plate_img = cv2.resize(plate_img, dsize=(0, 0), fx=1.6, fy=1.6)
+        _, plate_img = cv2.threshold(plate_img, thresh=0.0, maxval=255.0, type=cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        
+        # find contours again (same as above)
+        contours, _ = cv2.findContours(plate_img, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+        
+        plate_min_x, plate_min_y = plate_img.shape[1], plate_img.shape[0]
+        plate_max_x, plate_max_y = 0, 0
+
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            
+            area = w * h
+            ratio = w / h
+
+            if area > MIN_AREA \
+            and w > MIN_WIDTH and h > MIN_HEIGHT \
+            and MIN_RATIO < ratio < MAX_RATIO:
+                if x < plate_min_x:
+                    plate_min_x = x
+                if y < plate_min_y:
+                    plate_min_y = y
+                if x + w > plate_max_x:
+                    plate_max_x = x + w
+                if y + h > plate_max_y:
+                    plate_max_y = y + h
+                    
+        img_result = plate_img[plate_min_y:plate_max_y, plate_min_x:plate_max_x]
+        
+        img_result = cv2.GaussianBlur(img_result, ksize=(3, 3), sigmaX=0)
+        _, img_result = cv2.threshold(img_result, thresh=0.0, maxval=255.0, type=cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        img_result = cv2.copyMakeBorder(img_result, top=10, bottom=10, left=10, right=10, borderType=cv2.BORDER_CONSTANT, value=(0,0,0))
+        plt.subplot(len(plate_imgs), 1, i+1)
+        plt.imshow(img_result, cmap='gray')
+        plt.axis('off')
+        plt.savefig('Car-Plates(Thresholding).png',bbox_inches = 'tight')
+        # plt.show()
+        break
+
