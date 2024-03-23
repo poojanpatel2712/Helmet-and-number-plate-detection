@@ -1,6 +1,8 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import pytesseract
+
 def predict1(image_path):
     plt.style.use('dark_background')
     # img_ori = cv2.imread("presentation\\np_without_helmet.jpeg")
@@ -447,7 +449,6 @@ def predict1(image_path):
         plt.axis('off')
         # plt.show()
         cv2.imwrite('contour.jpg', img_lp)
-        
 
         # Get contours within cropped license plate
         char_list = find_contours(dimensions, img_lp)
@@ -467,7 +468,14 @@ def predict1(image_path):
         plt.imshow(char[i], cmap='gray')
         plt.axis('off')
     plt.savefig('Car-Plates-Char(Seperated).png',bbox_inches = 'tight')
+    pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
 
+    image = cv2.imread('Car-GrayScale.png', 0)
+    thresh = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
+    data = pytesseract.image_to_string(thresh, lang='eng',config='--psm 6')
+    print(data)
+
+    
 
 
